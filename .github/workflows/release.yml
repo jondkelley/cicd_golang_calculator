@@ -3,6 +3,9 @@ on:
   push:
     tags:
       - 'v*'
+concurrency:
+  group: version-update
+  cancel-in-progress: false
 jobs:
   release:
     runs-on: ubuntu-latest
