@@ -1,0 +1,14 @@
+{
+  "releases": [
+    {
+      "version": "0.0.1-alpha",
+      "urls": {
+        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1-alpha/calc-linux",
+        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1-alpha/calc-windows.exe",
+        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1-alpha/calc-macos"
+      },
+      "isAlpha": true,
+      "releaseDate": "2025-05-31T02:58:00Z"
+    }
+  ]
+}
