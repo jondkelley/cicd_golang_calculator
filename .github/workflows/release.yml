@@ -84,6 +84,7 @@ jobs:
       - name: Rebuild complete version.json with conflict resolution
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
           echo "Rebuilding version.json from ALL releases (triggered by $VERSION)"
@@ -109,7 +110,7 @@ jobs:
               """Create sort key for version ordering (newest first)"""
               tag = release['tag_name']
               created = release['created_at']
-              
+
               # Parse version components
               version_part = tag.replace('v', '').split('-')[0]
               try:
@@ -117,7 +118,7 @@ jobs:
                   version_num = major * 10000 + minor * 100 + patch
               except:
                   version_num = 0
-              
+
               # Priority: stable > beta > alpha
               if '-alpha' in tag:
                   priority = 1
@@ -125,42 +126,42 @@ jobs:
                   priority = 2
               else:
                   priority = 3
-              
+
               # Use creation time as tiebreaker
               return (priority, version_num, created)
 
           # Get repository name
           repo = "${{ github.repository }}"
-          
+
           # Fetch all releases using GitHub CLI
           print("Fetching all releases from GitHub API...")
           releases = run_gh_command(f'gh api repos/{repo}/releases --paginate')
-          
+
           if not releases:
               print("No releases found!")
               sys.exit(1)
-          
+
           print(f"Found {len(releases)} releases")
-          
+
           # Sort releases (newest/highest priority first)
           releases.sort(key=version_sort_key, reverse=True)
-          
+
           # Build version.json structure
           version_data = {
               "releases": []
           }
-          
+
           for release in releases:
               tag = release['tag_name']
-              
+
               # Skip draft releases
               if release.get('draft', False):
                   continue
-              
+
               # Determine release type
               is_alpha = '-alpha' in tag.lower()
               is_beta = '-beta' in tag.lower()
-              
+
               release_entry = {
                   "version": tag,
                   "urls": {
@@ -173,50 +174,50 @@ jobs:
                   "isBeta": is_beta,
                   "releaseDate": release['created_at']
               }
-              
+
               version_data["releases"].append(release_entry)
-              
+
               release_type = "ALPHA" if is_alpha else ("BETA" if is_beta else "STABLE")
               print(f"Added {tag} ({release_type})")
-          
+
           # Keep only the latest 50 releases
           version_data["releases"] = version_data["releases"][:50]
-          
+
           # Write version.json
           with open('version.json', 'w') as f:
               json.dump(version_data, f, indent=2)
-          
+
           print(f"\nRebuilt version.json with {len(version_data['releases'])} releases")
           if version_data["releases"]:
               print(f"Latest release: {version_data['releases'][0]['version']}")
           EOF
-          
+
           # Enhanced conflict resolution loop
           MAX_ATTEMPTS=10
           ATTEMPT=1
-          
+
           while [ $ATTEMPT -le $MAX_ATTEMPTS ]; do
             echo "=== Attempt $ATTEMPT/$MAX_ATTEMPTS ==="
-            
+
             # Always start fresh - fetch latest main
             echo "Fetching latest main branch..."
             git fetch origin main
             git reset --hard origin/main
-            
+
             # Run the rebuild script on latest code
             echo "Rebuilding version.json..."
             python3 rebuild_version.py
-            
+
             # Check if version.json actually changed
             if git diff --quiet version.json; then
               echo "No changes to version.json - skipping commit"
               exit 0
             fi
-            
+
             echo "Changes detected in version.json"
             git add version.json
             git commit -m "Rebuild version.json with all releases (triggered by ${GITHUB_REF#refs/tags/}) [attempt $ATTEMPT]"
-            
+
             # Try to push
             echo "Attempting to push changes..."
             if git push origin HEAD:main; then
@@ -224,19 +225,17 @@ jobs:
               exit 0
             else
               echo "❌ Push failed on attempt $ATTEMPT"
-              
+
               if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
                 echo "🚨 All $MAX_ATTEMPTS attempts failed. Manual intervention required."
                 exit 1
               fi
-              
+
               # Wait before retrying (exponential backoff)
               WAIT_TIME=$((ATTEMPT * 3))
               echo "Waiting ${WAIT_TIME} seconds before retry..."
               sleep $WAIT_TIME
-              
+
               ATTEMPT=$((ATTEMPT + 1))
             fi
           done
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
