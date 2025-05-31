@@ -44,9 +44,9 @@ jobs:
           if [[ "$VERSION" == *"-alpha"* ]]; then
             IS_ALPHA="true"
           fi
-
-          # Create new release object
-          NEW_RELEASE=$(cat <<EOF
+          
+          # Create new release object and save to file
+          cat > new_release.json <<EOF
           {
             "version": "${VERSION}",
             "urls": {
@@ -58,7 +58,6 @@ jobs:
             "releaseDate": "${TIMESTAMP}"
           }
           EOF
-          )
           
           # Download existing version.json or create empty structure
           if curl -s -f -o existing_version.json "https://raw.githubusercontent.com/${{ github.repository }}/main/version.json"; then
@@ -68,10 +67,9 @@ jobs:
             echo "Created new version.json structure"
           fi
           
-          # Use Python to manipulate JSON (more reliable than jq)
-          python3 << 'EOF'
+          # Use Python to manipulate JSON
+          python3 << 'PYTHON_EOF'
           import json
-          import sys
           
           # Read existing version.json
           try:
@@ -81,7 +79,7 @@ jobs:
               data = {"releases": []}
           
           # Read new release
-          with open('/dev/stdin', 'r') as f:
+          with open('new_release.json', 'r') as f:
               new_release = json.load(f)
           
           # Add new release to the beginning of the list
@@ -96,7 +94,7 @@ jobs:
           # Write updated version.json
           with open('version.json', 'w') as f:
               json.dump(data, f, indent=2)
-          EOF <<< "$NEW_RELEASE"
+          PYTHON_EOF
           
           echo "Updated version.json with ${VERSION}"
           cat version.json
