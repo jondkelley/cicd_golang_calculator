@@ -19,7 +19,7 @@ import (
 	"time"
 )
 
-const version = "1.0.0"
+var version = "0.0.0-local"
 const manifestURL = "https://raw.githubusercontent.com/jondkelley/cicd_golang_calculator/main/version.json"
 
 // Release represents a single software release with version information and download URLs
@@ -114,7 +114,7 @@ func checkForUpdate() {
 	// Find the latest eligible release
 	latestRelease := findLatestEligibleRelease(manifest.Releases)
 	if latestRelease == nil {
-		fmt.Println("no eligible releases found.")
+		fmt.Println("everything is up to date!")
 		return
 	}
 
