@@ -3,31 +3,34 @@ on:
   push:
     tags:
       - 'v*'
-concurrency:
-  group: version-update
-  cancel-in-progress: false
+
 jobs:
+  # Main release job - builds and creates GitHub release
   release:
     runs-on: ubuntu-latest
-    name: Release
+    name: Build and Release
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: 1.21
+      
       - name: Run CI pipeline with Makefile
         run: |
           # This runs: clean, deps, fmt, vet, lint, test, build-all
           make ci
+      
       - name: List built binaries
         run: |
           echo "Built binaries:"
           ls -la calc-*
+      
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -38,93 +41,181 @@ jobs:
             calc-darwin-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Update version.json
+
+  # Separate job for version.json updates with concurrency control
+  update-versions:
+    runs-on: ubuntu-latest
+    name: Update Version Catalog
+    needs: release  # Wait for release to complete first
+    permissions:
+      contents: write
+    concurrency:
+      group: version-update
+      cancel-in-progress: true  # Safe to cancel since we rebuild everything
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Wait for release to be fully available
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
-          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-
-          # Check if it's an alpha or beta release
-          IS_ALPHA="false"
-          IS_BETA="false"
-          if [[ "$VERSION" == *"-alpha"* ]]; then
-            IS_ALPHA="true"
-          elif [[ "$VERSION" == *"-beta"* ]]; then
-            IS_BETA="true"
-          fi
-
-          # Download existing version.json or create empty structure
-          if curl -s -f -o existing_version.json "https://raw.githubusercontent.com/${{ github.repository }}/main/version.json"; then
-            echo "Found existing version.json"
-          else
-            echo '{"releases": []}' > existing_version.json
-            echo "Created new version.json structure"
-          fi
-
-          # Create update script with variables passed as arguments
-          cat > update_version.py << 'EOF'
+          echo "Waiting for release $VERSION to be available via API..."
+          
+          # Wait up to 2 minutes for the release to be available
+          for i in {1..24}; do
+            if gh api repos/${{ github.repository }}/releases/tags/$VERSION > /dev/null 2>&1; then
+              echo "Release $VERSION is now available via API"
+              break
+            else
+              echo "Attempt $i/24: Release not yet available, waiting 5 seconds..."
+              sleep 5
+            fi
+          done
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Rebuild complete version.json
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "Rebuilding version.json from ALL releases (triggered by $VERSION)"
+          
+          # Create Python script to rebuild version.json from GitHub API
+          cat > rebuild_version.py << 'EOF'
           import json
+          import subprocess
           import sys
+          from datetime import datetime
 
-          # Get arguments
-          if len(sys.argv) != 6:
-              print("Usage: python3 update_version.py <version> <timestamp> <is_alpha> <is_beta> <repo>")
+          def run_gh_command(cmd):
+              """Run gh CLI command and return JSON output"""
+              try:
+                  result = subprocess.run(cmd, shell=True, capture_output=True, text=True, check=True)
+                  return json.loads(result.stdout)
+              except subprocess.CalledProcessError as e:
+                  print(f"Error running command: {cmd}")
+                  print(f"Error: {e.stderr}")
+                  sys.exit(1)
+
+          def version_sort_key(release):
+              """Create sort key for version ordering (newest first)"""
+              tag = release['tag_name']
+              created = release['created_at']
+              
+              # Parse version components
+              version_part = tag.replace('v', '').split('-')[0]
+              try:
+                  major, minor, patch = map(int, version_part.split('.'))
+                  version_num = major * 10000 + minor * 100 + patch
+              except:
+                  version_num = 0
+              
+              # Priority: stable > beta > alpha
+              if '-alpha' in tag:
+                  priority = 1
+              elif '-beta' in tag:
+                  priority = 2
+              else:
+                  priority = 3
+              
+              # Use creation time as tiebreaker
+              return (priority, version_num, created)
+
+          # Get repository name
+          repo = "${{ github.repository }}"
+          
+          # Fetch all releases using GitHub CLI
+          print("Fetching all releases from GitHub API...")
+          releases = run_gh_command(f'gh api repos/{repo}/releases --paginate')
+          
+          if not releases:
+              print("No releases found!")
               sys.exit(1)
-
-          version = sys.argv[1]
-          timestamp = sys.argv[2]
-          is_alpha = sys.argv[3].lower() == 'true'
-          is_beta = sys.argv[4].lower() == 'true'
-          repo = sys.argv[5]
-
-          # Create new release object
-          new_release = {
-              "version": version,  # Now includes "v" prefix
-              "urls": {
-                  "linux": f"https://github.com/{repo}/releases/download/{version}/calc-linux-amd64",
-                  "windows": f"https://github.com/{repo}/releases/download/{version}/calc-windows-amd64.exe",
-                  "darwin": f"https://github.com/{repo}/releases/download/{version}/calc-darwin-amd64",
-                  "darwin-arm64": f"https://github.com/{repo}/releases/download/{version}/calc-darwin-arm64"
-              },
-              "isAlpha": is_alpha,
-              "isBeta": is_beta,
-              "releaseDate": timestamp
+          
+          print(f"Found {len(releases)} releases")
+          
+          # Sort releases (newest/highest priority first)
+          releases.sort(key=version_sort_key, reverse=True)
+          
+          # Build version.json structure
+          version_data = {
+              "releases": []
           }
-
-          # Read existing version.json
-          try:
-              with open('existing_version.json', 'r') as f:
-                  data = json.load(f)
-          except:
-              data = {"releases": []}
-
-          # Add new release to the beginning of the list
-          if 'releases' not in data:
-              data['releases'] = []
-
-          data['releases'].insert(0, new_release)
-
+          
+          for release in releases:
+              tag = release['tag_name']
+              
+              # Skip draft releases
+              if release.get('draft', False):
+                  continue
+              
+              # Determine release type
+              is_alpha = '-alpha' in tag.lower()
+              is_beta = '-beta' in tag.lower()
+              
+              release_entry = {
+                  "version": tag,
+                  "urls": {
+                      "linux": f"https://github.com/{repo}/releases/download/{tag}/calc-linux-amd64",
+                      "windows": f"https://github.com/{repo}/releases/download/{tag}/calc-windows-amd64.exe",
+                      "darwin": f"https://github.com/{repo}/releases/download/{tag}/calc-darwin-amd64",
+                      "darwin-arm64": f"https://github.com/{repo}/releases/download/{tag}/calc-darwin-arm64"
+                  },
+                  "isAlpha": is_alpha,
+                  "isBeta": is_beta,
+                  "releaseDate": release['created_at']
+              }
+              
+              version_data["releases"].append(release_entry)
+              
+              release_type = "ALPHA" if is_alpha else ("BETA" if is_beta else "STABLE")
+              print(f"Added {tag} ({release_type})")
+          
           # Keep only the latest 50 releases
-          data['releases'] = data['releases'][:50]
-
-          # Write updated version.json
+          version_data["releases"] = version_data["releases"][:50]
+          
+          # Write version.json
           with open('version.json', 'w') as f:
-              json.dump(data, f, indent=2)
-
-          release_type = "ALPHA" if is_alpha else ("BETA" if is_beta else "STABLE")
-          print(f"Updated version.json with {version} ({release_type})")
+              json.dump(version_data, f, indent=2)
+          
+          print(f"\nRebuilt version.json with {len(version_data['releases'])} releases")
+          if version_data["releases"]:
+              print(f"Latest release: {version_data['releases'][0]['version']}")
           EOF
-
-          # Run the Python script with arguments
-          python3 update_version.py "$VERSION" "$TIMESTAMP" "$IS_ALPHA" "$IS_BETA" "${{ github.repository }}"
-
-          echo "Final version.json:"
-          cat version.json
+          
+          # Run the rebuild script
+          python3 rebuild_version.py
+          
+          echo "Final version.json preview (first 50 lines):"
+          head -50 version.json
+      
       - name: Commit and push version.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          # Check if version.json actually changed
+          if git diff --quiet version.json; then
+            echo "No changes to version.json - skipping commit"
+            exit 0
+          fi
+          
           git add version.json
-          git commit -m "Update version.json with release ${GITHUB_REF#refs/tags/v}" || exit 0
-          git push origin HEAD:main || true
+          git commit -m "Rebuild version.json with all releases (triggered by ${GITHUB_REF#refs/tags/})"
+          
+          # Push with retry logic
+          for i in {1..5}; do
+            if git push origin HEAD:main; then
+              echo "Successfully pushed version.json update"
+              break
+            else
+              echo "Push failed, attempt $i/5. Retrying in $((i * 2)) seconds..."
+              sleep $((i * 2))
+              git pull --rebase origin main
+            fi
+          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
