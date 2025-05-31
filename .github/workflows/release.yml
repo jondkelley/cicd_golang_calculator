@@ -28,10 +28,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            calc-linux
-            calc-windows.exe
-            calc-macos
-            calc-macos-arm64
+            calc-linux-amd64
+            calc-windows-amd64.exe
+            calc-darwin-amd64
+            calc-darwin-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version.json
@@ -72,10 +72,10 @@ jobs:
           new_release = {
               "version": version,
               "urls": {
-                  "linux": f"https://github.com/{repo}/releases/download/v{version}/calc-linux",
-                  "windows": f"https://github.com/{repo}/releases/download/v{version}/calc-windows.exe",
-                  "darwin": f"https://github.com/{repo}/releases/download/v{version}/calc-macos",
-                  "darwin-arm64": f"https://github.com/{repo}/releases/download/v{version}/calc-macos-arm64"
+                  "linux": f"https://github.com/{repo}/releases/download/v{version}/calc-linux-amd64",
+                  "windows": f"https://github.com/{repo}/releases/download/v{version}/calc-windows-amd64.exe",
+                  "darwin": f"https://github.com/{repo}/releases/download/v{version}/calc-darwin-amd64",
+                  "darwin-arm64": f"https://github.com/{repo}/releases/download/v{version}/calc-darwin-arm64"
               },
               "isAlpha": is_alpha,
               "releaseDate": timestamp
