@@ -45,20 +45,6 @@ jobs:
             IS_ALPHA="true"
           fi
           
-          # Create new release object and save to file
-          cat > new_release.json <<EOF
-          {
-            "version": "${VERSION}",
-            "urls": {
-              "linux": "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/calc-linux",
-              "windows": "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/calc-windows.exe",
-              "darwin": "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/calc-macos"
-            },
-            "isAlpha": ${IS_ALPHA},
-            "releaseDate": "${TIMESTAMP}"
-          }
-          EOF
-          
           # Download existing version.json or create empty structure
           if curl -s -f -o existing_version.json "https://raw.githubusercontent.com/${{ github.repository }}/main/version.json"; then
             echo "Found existing version.json"
@@ -67,9 +53,29 @@ jobs:
             echo "Created new version.json structure"
           fi
           
-          # Use Python to manipulate JSON
-          python3 << 'PYTHON_EOF'
+          # Create update script
+          cat > update_version.py << 'EOF'
           import json
+          import os
+          import sys
+          
+          # Get environment variables
+          version = os.environ['VERSION']
+          timestamp = os.environ['TIMESTAMP']
+          is_alpha = os.environ['IS_ALPHA'].lower() == 'true'
+          repo = os.environ['GITHUB_REPOSITORY']
+          
+          # Create new release object
+          new_release = {
+              "version": version,
+              "urls": {
+                  "linux": f"https://github.com/{repo}/releases/download/v{version}/calc-linux",
+                  "windows": f"https://github.com/{repo}/releases/download/v{version}/calc-windows.exe",
+                  "darwin": f"https://github.com/{repo}/releases/download/v{version}/calc-macos"
+              },
+              "isAlpha": is_alpha,
+              "releaseDate": timestamp
+          }
           
           # Read existing version.json
           try:
@@ -77,10 +83,6 @@ jobs:
                   data = json.load(f)
           except:
               data = {"releases": []}
-          
-          # Read new release
-          with open('new_release.json', 'r') as f:
-              new_release = json.load(f)
           
           # Add new release to the beginning of the list
           if 'releases' not in data:
@@ -94,9 +96,14 @@ jobs:
           # Write updated version.json
           with open('version.json', 'w') as f:
               json.dump(data, f, indent=2)
-          PYTHON_EOF
           
-          echo "Updated version.json with ${VERSION}"
+          print(f"Updated version.json with {version}")
+          EOF
+          
+          # Run the Python script
+          python3 update_version.py
+          
+          echo "Final version.json:"
           cat version.json
       - name: Commit and push version.json
         run: |
