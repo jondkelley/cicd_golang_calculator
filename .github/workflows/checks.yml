@@ -7,7 +7,7 @@ on:
 
 jobs:
   gofmt:
-    name: Go Format Pass
+    name: Go Format
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -28,7 +28,7 @@ jobs:
           echo "All Go files are properly formatted"
 
   golint:
-    name: Go Lint Pass
+    name: Go Lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -51,7 +51,7 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
-    name: Tests Passing
+    name: Tests
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
