@@ -5,10 +5,16 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
 const manifestURL = "https://raw.githubusercontent.com/jondkelley/cicd_golang_calculator/main/version.json"
+
+// normalizeVersion removes the "v" prefix from version strings for comparison
+func normalizeVersion(version string) string {
+	return strings.TrimPrefix(version, "v")
+}
 
 // FetchVersionManifest retrieves the version manifest from the remote URL
 func FetchVersionManifest() (*VersionManifest, error) {
@@ -37,9 +43,11 @@ func FetchVersionManifest() (*VersionManifest, error) {
 }
 
 // FindLatestEligibleRelease returns the latest release that the user is allowed to install
-func FindLatestEligibleRelease(releases []Release) *Release {
+// and is different from the current version
+func FindLatestEligibleRelease(releases []Release, currentVersion string) *Release {
 	allowAlpha := os.Getenv("CALC_ALLOW_ALPHA") != ""
 	allowBeta := os.Getenv("CALC_ALLOW_BETA") != ""
+	currentVersionNormalized := normalizeVersion(currentVersion)
 
 	for _, release := range releases {
 		// Skip alpha releases unless allowed
@@ -52,7 +60,15 @@ func FindLatestEligibleRelease(releases []Release) *Release {
 			continue
 		}
 
-		// Return the first (latest) eligible release
+		// Normalize the release version for comparison
+		releaseVersionNormalized := normalizeVersion(release.Version)
+
+		// Skip if this is the same version as current
+		if releaseVersionNormalized == currentVersionNormalized {
+			continue
+		}
+
+		// Return the first (latest) eligible release that's different from current
 		return &release
 	}
 
