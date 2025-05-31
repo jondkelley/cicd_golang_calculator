@@ -39,10 +39,13 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/}
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-          # Check if it's an alpha release
+          # Check if it's an alpha or beta release
           IS_ALPHA="false"
+          IS_BETA="false"
           if [[ "$VERSION" == *"-alpha"* ]]; then
             IS_ALPHA="true"
+          elif [[ "$VERSION" == *"-beta"* ]]; then
+            IS_BETA="true"
           fi
 
           # Download existing version.json or create empty structure
@@ -59,14 +62,15 @@ jobs:
           import sys
 
           # Get arguments
-          if len(sys.argv) != 5:
-              print("Usage: python3 update_version.py <version> <timestamp> <is_alpha> <repo>")
+          if len(sys.argv) != 6:
+              print("Usage: python3 update_version.py <version> <timestamp> <is_alpha> <is_beta> <repo>")
               sys.exit(1)
 
           version = sys.argv[1]
           timestamp = sys.argv[2]
           is_alpha = sys.argv[3].lower() == 'true'
-          repo = sys.argv[4]
+          is_beta = sys.argv[4].lower() == 'true'
+          repo = sys.argv[5]
 
           # Create new release object
           new_release = {
@@ -78,6 +82,7 @@ jobs:
                   "darwin-arm64": f"https://github.com/{repo}/releases/download/{version}/calc-darwin-arm64"
               },
               "isAlpha": is_alpha,
+              "isBeta": is_beta,
               "releaseDate": timestamp
           }
 
@@ -101,11 +106,12 @@ jobs:
           with open('version.json', 'w') as f:
               json.dump(data, f, indent=2)
 
-          print(f"Updated version.json with {version}")
+          release_type = "ALPHA" if is_alpha else ("BETA" if is_beta else "STABLE")
+          print(f"Updated version.json with {version} ({release_type})")
           EOF
 
           # Run the Python script with arguments
-          python3 update_version.py "$VERSION" "$TIMESTAMP" "$IS_ALPHA" "${{ github.repository }}"
+          python3 update_version.py "$VERSION" "$TIMESTAMP" "$IS_ALPHA" "$IS_BETA" "${{ github.repository }}"
 
           echo "Final version.json:"
           cat version.json

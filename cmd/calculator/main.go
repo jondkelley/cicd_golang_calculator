@@ -29,6 +29,7 @@ type Release struct {
 	Version     string            `json:"version"`
 	URLs        map[string]string `json:"urls"`
 	IsAlpha     bool              `json:"isAlpha"`
+	IsBeta      bool              `json:"isBeta"`
 	ReleaseDate string            `json:"releaseDate"`
 }
 
@@ -130,12 +131,14 @@ func checkForUpdate() {
 	}
 
 	// Show update prompt
-	alphaWarning := ""
+	releaseTypeWarning := ""
 	if latestRelease.IsAlpha {
-		alphaWarning = " (ALPHA RELEASE)"
+		releaseTypeWarning = " (ALPHA RELEASE)"
+	} else if latestRelease.IsBeta {
+		releaseTypeWarning = " (BETA RELEASE)"
 	}
 
-	fmt.Printf("new version %s%s available, would you like to update? Y[es]/N[o]: ", latestRelease.Version, alphaWarning)
+	fmt.Printf("new version %s%s available, would you like to update? Y[es]/N[o]: ", latestRelease.Version, releaseTypeWarning)
 	var input string
 	fmt.Scanln(&input)
 
@@ -150,10 +153,16 @@ func checkForUpdate() {
 // findLatestEligibleRelease returns the latest release that the user is allowed to install
 func findLatestEligibleRelease(releases []Release) *Release {
 	allowAlpha := os.Getenv("CALC_ALLOW_ALPHA") != ""
+	allowBeta := os.Getenv("CALC_ALLOW_BETA") != ""
 
 	for _, release := range releases {
-		// Skip alpha releases unless explicitly allowed
+		// Skip alpha releases unless allowed
 		if release.IsAlpha && !allowAlpha {
+			continue
+		}
+
+		// Skip beta releases unless allowed
+		if release.IsBeta && !allowBeta {
 			continue
 		}
 
@@ -188,11 +197,13 @@ func updateBinary(release Release) {
 	}
 
 	// Download new version
-	alphaLabel := ""
+	releaseTypeLabel := ""
 	if release.IsAlpha {
-		alphaLabel = " (alpha)"
+		releaseTypeLabel = " (alpha)"
+	} else if release.IsBeta {
+		releaseTypeLabel = " (beta)"
 	}
-	fmt.Printf(" * Downloading %s binary%s from: %s\n", platform, alphaLabel, url)
+	fmt.Printf(" * Downloading %s binary%s from: %s\n", platform, releaseTypeLabel, url)
 
 	resp, err := http.Get(url)
 	if err != nil {
