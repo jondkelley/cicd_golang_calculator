@@ -22,6 +22,7 @@ import (
 const version = "1.0.0"
 const manifestURL = "https://raw.githubusercontent.com/jondkelley/cicd_golang_calculator/main/version.json"
 
+// Release represents a single software release with version information and download URLs
 type Release struct {
 	Version     string            `json:"version"`
 	URLs        map[string]string `json:"urls"`
@@ -29,6 +30,7 @@ type Release struct {
 	ReleaseDate string            `json:"releaseDate"`
 }
 
+// VersionManifest contains a collection of software releases
 type VersionManifest struct {
 	Releases []Release `json:"releases"`
 }
@@ -50,7 +52,7 @@ func main() {
 	fmt.Println(`  10 / 2`)
 	fmt.Println(`  sqrt(16)`)
 	fmt.Println("Supported operators: + - * / % ^ sqrt()")
-	fmt.Println("Type Ctrl+C to exit.\n")
+	fmt.Println("Type Ctrl+C to exit.")
 
 	// Setup signal handling to exit on Ctrl+C
 	sigs := make(chan os.Signal, 1)
