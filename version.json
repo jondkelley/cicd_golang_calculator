@@ -1,6 +1,17 @@
 {
   "releases": [
     {
+      "version": "1.0.4-alpha",
+      "urls": {
+        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v1.0.4-alpha/calc-linux",
+        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v1.0.4-alpha/calc-windows.exe",
+        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v1.0.4-alpha/calc-macos",
+        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v1.0.4-alpha/calc-macos-arm64"
+      },
+      "isAlpha": true,
+      "releaseDate": "2025-05-31T03:39:50Z"
+    },
+    {
       "version": "0.0.3-alpha",
       "urls": {
         "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.3-alpha/calc-linux",
