@@ -16,17 +16,14 @@ jobs:
         uses: actions/setup-go@v4
         with:
           go-version: 1.21
-      - name: Get dependencies
-        run: go mod tidy
-      - name: Run tests
-        run: go test ./...
-      - name: Build multi-platform binaries
+      - name: Run CI pipeline with Makefile
         run: |
-          export TAG=$(git describe --tags --always)
-          echo "Building with tag $TAG"
-          #GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$TAG" -o calc-linux ./cmd/calculator
-          #GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$TAG" -o calc-windows.exe ./cmd/calculator
-          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$TAG" -o calc-macos ./cmd/calculator
+          # This runs: clean, deps, fmt, vet, lint, test, build-all
+          make ci
+      - name: List built binaries
+        run: |
+          echo "Built binaries:"
+          ls -la calc-*
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -34,19 +31,20 @@ jobs:
             calc-linux
             calc-windows.exe
             calc-macos
+            calc-macos-arm64
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version.json
         run: |
           VERSION=${GITHUB_REF#refs/tags/v}
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          
+
           # Check if it's an alpha release
           IS_ALPHA="false"
           if [[ "$VERSION" == *"-alpha"* ]]; then
             IS_ALPHA="true"
           fi
-          
+
           # Download existing version.json or create empty structure
           if curl -s -f -o existing_version.json "https://raw.githubusercontent.com/${{ github.repository }}/main/version.json"; then
             echo "Found existing version.json"
@@ -54,60 +52,61 @@ jobs:
             echo '{"releases": []}' > existing_version.json
             echo "Created new version.json structure"
           fi
-          
+
           # Create update script with variables passed as arguments
           cat > update_version.py << 'EOF'
           import json
           import sys
-          
+
           # Get arguments
           if len(sys.argv) != 5:
               print("Usage: python3 update_version.py <version> <timestamp> <is_alpha> <repo>")
               sys.exit(1)
-              
+
           version = sys.argv[1]
           timestamp = sys.argv[2]
           is_alpha = sys.argv[3].lower() == 'true'
           repo = sys.argv[4]
-          
+
           # Create new release object
           new_release = {
               "version": version,
               "urls": {
                   "linux": f"https://github.com/{repo}/releases/download/v{version}/calc-linux",
                   "windows": f"https://github.com/{repo}/releases/download/v{version}/calc-windows.exe",
-                  "darwin": f"https://github.com/{repo}/releases/download/v{version}/calc-macos"
+                  "darwin": f"https://github.com/{repo}/releases/download/v{version}/calc-macos",
+                  "darwin-arm64": f"https://github.com/{repo}/releases/download/v{version}/calc-macos-arm64"
               },
               "isAlpha": is_alpha,
               "releaseDate": timestamp
           }
-          
+
           # Read existing version.json
           try:
               with open('existing_version.json', 'r') as f:
                   data = json.load(f)
           except:
               data = {"releases": []}
-          
+
           # Add new release to the beginning of the list
           if 'releases' not in data:
               data['releases'] = []
-          
+
           data['releases'].insert(0, new_release)
-          
+
           # Keep only the latest 50 releases
           data['releases'] = data['releases'][:50]
-          
+
           # Write updated version.json
           with open('version.json', 'w') as f:
               json.dump(data, f, indent=2)
-          
+
           print(f"Updated version.json with {version}")
           EOF
-          
+
           # Run the Python script with arguments
           python3 update_version.py "$VERSION" "$TIMESTAMP" "$IS_ALPHA" "${{ github.repository }}"
-          
+
           echo "Final version.json:"
           cat version.json
       - name: Commit and push version.json

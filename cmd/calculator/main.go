@@ -20,6 +20,7 @@ import (
 )
 
 var version = "0.0.0-local"
+var buildTime = "unknown"
 
 const manifestURL = "https://raw.githubusercontent.com/jondkelley/cicd_golang_calculator/main/version.json"
 
@@ -40,12 +41,15 @@ func main() {
 	if len(os.Args) > 1 {
 		arg := os.Args[1]
 		if arg == "--version" || arg == "-v" {
-			fmt.Printf("cicd_golang_calculator %s (%s)\n", version, runtime.Version())
+			fmt.Printf("cicd_golang_calculator %s\n", version)
+			fmt.Printf("Built: %s\n", buildTime)
+			fmt.Printf("Go version: %s\n", runtime.Version())
+			fmt.Printf("OS/Arch: %s/%s\n", runtime.GOOS, runtime.GOARCH)
 			return
 		}
 	}
 
-	fmt.Printf("cicd_golang_calculator %s (%s)\n", version, runtime.Version())
+	fmt.Printf("cicd_golang_calculator %s\n", version)
 	checkForUpdate()
 	fmt.Println("Interactive Calculator - Enter expressions like:")
 	fmt.Println(`  3 + 4`)
@@ -285,7 +289,7 @@ func updateBinary(release Release) {
 		return
 	}
 
-	fmt.Printf("✅ Update complete from %s to %s. Please re-run the application.\n", version, release.Version)
+	fmt.Printf("✅ Update complete from %s (built %s) to %s. Please re-run the application.\n", version, buildTime, release.Version)
 	os.Exit(0)
 }
 
