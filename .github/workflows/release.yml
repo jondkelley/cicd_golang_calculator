@@ -1,0 +1,111 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*'
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.21
+      - name: Get dependencies
+        run: go mod tidy
+      - name: Run tests
+        run: go test ./...
+      - name: Build binaries
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o calc-linux ./cmd/calculator
+          GOOS=windows GOARCH=amd64 go build -o calc-windows.exe ./cmd/calculator
+          GOOS=darwin GOARCH=amd64 go build -o calc-macos ./cmd/calculator
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            calc-linux
+            calc-windows.exe
+            calc-macos
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update version.json
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          # Check if it's an alpha release
+          IS_ALPHA="false"
+          if [[ "$VERSION" == *"-alpha"* ]]; then
+            IS_ALPHA="true"
+          fi
+
+          # Create new release object
+          NEW_RELEASE=$(cat <<EOF
+          {
+            "version": "${VERSION}",
+            "urls": {
+              "linux": "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/calc-linux",
+              "windows": "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/calc-windows.exe",
+              "darwin": "https://github.com/${{ github.repository }}/releases/download/v${VERSION}/calc-macos"
+            },
+            "isAlpha": ${IS_ALPHA},
+            "releaseDate": "${TIMESTAMP}"
+          }
+          EOF
+          )
+          
+          # Download existing version.json or create empty structure
+          if curl -s -f -o existing_version.json "https://raw.githubusercontent.com/${{ github.repository }}/main/version.json"; then
+            echo "Found existing version.json"
+          else
+            echo '{"releases": []}' > existing_version.json
+            echo "Created new version.json structure"
+          fi
+          
+          # Use Python to manipulate JSON (more reliable than jq)
+          python3 << 'EOF'
+          import json
+          import sys
+          
+          # Read existing version.json
+          try:
+              with open('existing_version.json', 'r') as f:
+                  data = json.load(f)
+          except:
+              data = {"releases": []}
+          
+          # Read new release
+          with open('/dev/stdin', 'r') as f:
+              new_release = json.load(f)
+          
+          # Add new release to the beginning of the list
+          if 'releases' not in data:
+              data['releases'] = []
+          
+          data['releases'].insert(0, new_release)
+          
+          # Keep only the latest 50 releases
+          data['releases'] = data['releases'][:50]
+          
+          # Write updated version.json
+          with open('version.json', 'w') as f:
+              json.dump(data, f, indent=2)
+          EOF <<< "$NEW_RELEASE"
+          
+          echo "Updated version.json with ${VERSION}"
+          cat version.json
+      - name: Commit and push version.json
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version.json
+          git commit -m "Update version.json with release ${GITHUB_REF#refs/tags/v}" || exit 0
+          git push origin HEAD:main || true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
