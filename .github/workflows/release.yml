@@ -20,10 +20,10 @@ jobs:
         run: go mod tidy
       - name: Run tests
         run: go test ./...
-      - name: Build binaries
+      - name: Build multi-platform binaries
         run: |
-          GOOS=linux GOARCH=amd64 go build -o calc-linux ./cmd/calculator
-          GOOS=windows GOARCH=amd64 go build -o calc-windows.exe ./cmd/calculator
+          #GOOS=linux GOARCH=amd64 go build -o calc-linux ./cmd/calculator
+          #GOOS=windows GOARCH=amd64 go build -o calc-windows.exe ./cmd/calculator
           GOOS=darwin GOARCH=amd64 go build -o calc-macos ./cmd/calculator
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -53,17 +53,20 @@ jobs:
             echo "Created new version.json structure"
           fi
           
-          # Create update script
+          # Create update script with variables passed as arguments
           cat > update_version.py << 'EOF'
           import json
-          import os
           import sys
           
-          # Get environment variables
-          version = os.environ['VERSION']
-          timestamp = os.environ['TIMESTAMP']
-          is_alpha = os.environ['IS_ALPHA'].lower() == 'true'
-          repo = os.environ['GITHUB_REPOSITORY']
+          # Get arguments
+          if len(sys.argv) != 5:
+              print("Usage: python3 update_version.py <version> <timestamp> <is_alpha> <repo>")
+              sys.exit(1)
+              
+          version = sys.argv[1]
+          timestamp = sys.argv[2]
+          is_alpha = sys.argv[3].lower() == 'true'
+          repo = sys.argv[4]
           
           # Create new release object
           new_release = {
@@ -100,8 +103,8 @@ jobs:
           print(f"Updated version.json with {version}")
           EOF
           
-          # Run the Python script
-          python3 update_version.py
+          # Run the Python script with arguments
+          python3 update_version.py "$VERSION" "$TIMESTAMP" "$IS_ALPHA" "${{ github.repository }}"
           
           echo "Final version.json:"
           cat version.json
