@@ -36,7 +36,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update version.json
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          VERSION=${GITHUB_REF#refs/tags/}
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
           # Check if it's an alpha release
@@ -70,12 +70,12 @@ jobs:
 
           # Create new release object
           new_release = {
-              "version": version,
+              "version": version,  # Now includes "v" prefix
               "urls": {
-                  "linux": f"https://github.com/{repo}/releases/download/v{version}/calc-linux-amd64",
-                  "windows": f"https://github.com/{repo}/releases/download/v{version}/calc-windows-amd64.exe",
-                  "darwin": f"https://github.com/{repo}/releases/download/v{version}/calc-darwin-amd64",
-                  "darwin-arm64": f"https://github.com/{repo}/releases/download/v{version}/calc-darwin-arm64"
+                  "linux": f"https://github.com/{repo}/releases/download/{version}/calc-linux-amd64",
+                  "windows": f"https://github.com/{repo}/releases/download/{version}/calc-windows-amd64.exe",
+                  "darwin": f"https://github.com/{repo}/releases/download/{version}/calc-darwin-amd64",
+                  "darwin-arm64": f"https://github.com/{repo}/releases/download/{version}/calc-darwin-arm64"
               },
               "isAlpha": is_alpha,
               "releaseDate": timestamp
