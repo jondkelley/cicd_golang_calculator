@@ -1,6 +1,18 @@
 {
   "releases": [
     {
+      "version": "v0.1.3",
+      "urls": {
+        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.1.3/calc-linux-amd64",
+        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.1.3/calc-windows-amd64.exe",
+        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.1.3/calc-darwin-amd64",
+        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.1.3/calc-darwin-arm64"
+      },
+      "isAlpha": false,
+      "isBeta": false,
+      "releaseDate": "2025-05-31T05:32:53Z"
+    },
+    {
       "version": "v0.1.2",
       "urls": {
         "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.1.2/calc-linux-amd64",
