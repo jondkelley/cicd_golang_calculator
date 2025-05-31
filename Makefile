@@ -1,5 +1,5 @@
 # Go Calculator Makefile
-.PHONY: all build build-all build-linux build-windows build-darwin test clean fmt vet lint deps tidy tag-stable tag-alpha help
+.PHONY: all build build-all build-linux build-windows build-darwin test clean fmt vet lint deps tidy help
 
 # Variables
 APP_NAME := calc
@@ -127,30 +127,9 @@ release: deps fmt vet test
 	@echo "Building release version..."
 	go build $(LDFLAGS) -a -installsuffix cgo -o $(APP_NAME) $(CMD_DIR)
 
-# Create and push stable tag
-tag-stable:
-	@if [ -z "$(TAG)" ]; then \
-		echo "Usage: make tag-stable TAG=v1.0.1"; \
-		exit 1; \
-	fi
-	@echo "Creating stable tag: $(TAG)"
-	git tag $(TAG)
-	git push origin $(TAG)
-
-# Create and push alpha tag
-tag-alpha:
-	@if [ -z "$(TAG)" ]; then \
-		echo "Usage: make tag-alpha TAG=v1.0.1-alpha"; \
-		exit 1; \
-	fi
-	@echo "Creating alpha tag: $(TAG)"
-	git tag $(TAG)
-	git push origin $(TAG)
-
-# Create and push tag (auto-detect stable vs alpha)
 tag:
 	@if [ -z "$(TAG)" ]; then \
-		echo "Usage: make tag TAG=v1.0.1 or make tag TAG=v1.0.1-alpha"; \
+		echo "Usage: make tag TAG=v1.0.1 or make tag TAG=v1.0.1-alpha or make tag TAG=v1.0.1-beta"; \
 		exit 1; \
 	fi
 	@echo "Creating tag: $(TAG)"
@@ -193,7 +172,6 @@ install: build
 	@echo "Installing $(APP_NAME) to $(GOPATH)/bin"
 	cp $(APP_NAME) $(GOPATH)/bin/
 
-# Show help
 help:
 	@echo "Available targets:"
 	@echo "  all           - Clean, deps, format, vet, test, and build"
@@ -214,9 +192,7 @@ help:
 	@echo "  run           - Build and run the application"
 	@echo "  run-args      - Run with arguments: make run-args ARGS='1 + 2'"
 	@echo "  release       - Build optimized release version"
-	@echo "  tag-stable    - Create stable tag: make tag-stable TAG=v1.0.1"
-	@echo "  tag-alpha     - Create alpha tag: make tag-alpha TAG=v1.0.1-alpha"
-	@echo "  tag           - Create any tag: make tag TAG=v1.0.1"
+	@echo "  tag           - Create any tag: make tag TAG=v1.0.1 or TAG=v1.0.1-alpha"
 	@echo "  list-tags     - List all git tags"
 	@echo "  delete-tag    - Delete tag: make delete-tag TAG=v1.0.1"
 	@echo "  version       - Show current version info"
