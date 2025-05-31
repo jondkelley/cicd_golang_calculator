@@ -40,12 +40,12 @@ func main() {
 	if len(os.Args) > 1 {
 		arg := os.Args[1]
 		if arg == "--version" || arg == "-v" {
-			fmt.Printf("cicd_golang_calculator v%s (%s)\n", version, runtime.Version())
+			fmt.Printf("cicd_golang_calculator %s (%s)\n", version, runtime.Version())
 			return
 		}
 	}
 
-	fmt.Printf("cicd_golang_calculator v%s (%s)\n", version, runtime.Version())
+	fmt.Printf("cicd_golang_calculator %s (%s)\n", version, runtime.Version())
 	checkForUpdate()
 	fmt.Println("Interactive Calculator - Enter expressions like:")
 	fmt.Println(`  3 + 4`)
