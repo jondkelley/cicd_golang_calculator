@@ -20,6 +20,7 @@ import (
 )
 
 var version = "0.0.0-local"
+
 const manifestURL = "https://raw.githubusercontent.com/jondkelley/cicd_golang_calculator/main/version.json"
 
 // Release represents a single software release with version information and download URLs

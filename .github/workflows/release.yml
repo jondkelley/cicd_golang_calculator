@@ -22,9 +22,11 @@ jobs:
         run: go test ./...
       - name: Build multi-platform binaries
         run: |
-          #GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$(git describe --tags --always)" -o calc-linux ./cmd/calculator
-          #GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$(git describe --tags --always)" -o calc-windows.exe ./cmd/calculator
-          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$(git describe --tags --always)" -o calc-macos ./cmd/calculator
+          export TAG=$(git describe --tags --always)
+          echo "Building with tag $TAG"
+          #GOOS=linux GOARCH=amd64 go build -ldflags "-X main.version=$TAG" -o calc-linux ./cmd/calculator
+          #GOOS=windows GOARCH=amd64 go build -ldflags "-X main.version=$TAG" -o calc-windows.exe ./cmd/calculator
+          GOOS=darwin GOARCH=amd64 go build -ldflags "-X main.version=$TAG" -o calc-macos ./cmd/calculator
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
