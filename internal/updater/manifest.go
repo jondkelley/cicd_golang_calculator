@@ -1,10 +1,47 @@
 package updater
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
 	"strconv"
 	"strings"
+	"time"
 )
+
+const manifestURL = "https://raw.githubusercontent.com/jondkelley/cicd_golang_calculator/main/version.json"
+
+// normalizeVersion removes the "v" prefix from version strings for comparison
+func normalizeVersion(version string) string {
+	return strings.TrimPrefix(version, "v")
+}
+
+// FetchVersionManifest retrieves the version manifest from the remote URL
+func FetchVersionManifest() (*VersionManifest, error) {
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(manifestURL)
+	if err != nil {
+		return nil, fmt.Errorf("no version.json manifest found in project repository")
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("no version.json manifest found in project repository (status code = %d)", resp.StatusCode)
+	}
+
+	var manifest VersionManifest
+	err = json.NewDecoder(resp.Body).Decode(&manifest)
+	if err != nil {
+		return nil, fmt.Errorf("malformed version.json manifest found")
+	}
+
+	if len(manifest.Releases) == 0 {
+		return nil, fmt.Errorf("no releases found in manifest")
+	}
+
+	return &manifest, nil
+}
 
 // SemanticVersion represents a parsed semantic version
 type SemanticVersion struct {
@@ -33,29 +70,29 @@ func ParseSemanticVersion(version string) (*SemanticVersion, error) {
 		sv.PreRelease = "beta"
 		version = strings.TrimSuffix(version, "-beta")
 	}
-	
+
 	// Split version into parts
 	parts := strings.Split(version, ".")
 	if len(parts) != 3 {
 		return nil, fmt.Errorf("invalid version format: %s", version)
 	}
-	
+
 	var err error
 	sv.Major, err = strconv.Atoi(parts[0])
 	if err != nil {
 		return nil, fmt.Errorf("invalid major version: %s", parts[0])
 	}
-	
+
 	sv.Minor, err = strconv.Atoi(parts[1])
 	if err != nil {
 		return nil, fmt.Errorf("invalid minor version: %s", parts[1])
 	}
-	
+
 	sv.Patch, err = strconv.Atoi(parts[2])
 	if err != nil {
 		return nil, fmt.Errorf("invalid patch version: %s", parts[2])
 	}
-	
+
 	return sv, nil
 }
 
@@ -66,17 +103,17 @@ func (sv *SemanticVersion) IsNewerThan(other *SemanticVersion) bool {
 	if sv.Major != other.Major {
 		return sv.Major > other.Major
 	}
-	
+
 	// Compare minor version
 	if sv.Minor != other.Minor {
 		return sv.Minor > other.Minor
 	}
-	
+
 	// Compare patch version
 	if sv.Patch != other.Patch {
 		return sv.Patch > other.Patch
 	}
-	
+
 	// If versions are equal, handle pre-release comparison
 	// Stable releases are considered newer than pre-releases
 	if sv.PreRelease == "" && other.PreRelease != "" {
@@ -85,7 +122,7 @@ func (sv *SemanticVersion) IsNewerThan(other *SemanticVersion) bool {
 	if sv.PreRelease != "" && other.PreRelease == "" {
 		return false
 	}
-	
+
 	// Both are pre-releases or both are stable
 	if sv.PreRelease != "" && other.PreRelease != "" {
 		// Beta is considered newer than alpha
@@ -96,7 +133,7 @@ func (sv *SemanticVersion) IsNewerThan(other *SemanticVersion) bool {
 			return false
 		}
 	}
-	
+
 	// Versions are identical
 	return false
 }
@@ -148,7 +185,7 @@ func FindLatestEligibleRelease(releases []Release, currentVersion string) *Relea
 
 		// Channel preference logic:
 		// - If user is on alpha, prefer alpha updates (but allow beta/stable if no newer alpha exists)
-		// - If user is on beta, prefer beta updates (but allow stable if no newer beta exists)  
+		// - If user is on beta, prefer beta updates (but allow stable if no newer beta exists)
 		// - If user is on stable, only offer stable updates
 		releaseChannel := "stable"
 		if release.IsAlpha {
