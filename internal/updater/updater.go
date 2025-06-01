@@ -55,7 +55,12 @@ func CheckForUpdate(currentVersion, buildTime string) {
 		return
 	}
 
-	promptAndUpdate(*result.LatestRelease, currentVersion, buildTime)
+	// Check if automatic updates are enabled
+	if isEnvVarTrue("CALC_UNPROMPTED_ENABLE") {
+		performAutomaticUpdate(*result.LatestRelease, currentVersion, buildTime)
+	} else {
+		promptAndUpdate(*result.LatestRelease, currentVersion, buildTime)
+	}
 }
 
 // CheckForUpdatesWithResult returns detailed information about update availability
@@ -141,7 +146,21 @@ func CheckForUpdatesWithResult(releases []Release, currentVersion string) Update
 	return result
 }
 
-// Rest of the functions remain the same...
+// performAutomaticUpdate performs an update without prompting the user
+func performAutomaticUpdate(latestRelease Release, currentVersion, buildTime string) {
+	releaseTypeWarning := ""
+	if latestRelease.IsAlpha {
+		releaseTypeWarning = " (ALPHA RELEASE)"
+	} else if latestRelease.IsBeta {
+		releaseTypeWarning = " (BETA RELEASE)"
+	}
+
+	fmt.Printf("new version %s%s available, updating automatically...\n", latestRelease.Version, releaseTypeWarning)
+	fmt.Printf("Updating current version from %s to %s\n", currentVersion, latestRelease.Version)
+	UpdateBinary(latestRelease, currentVersion, buildTime)
+}
+
+// promptAndUpdate prompts the user and updates if they agree
 func promptAndUpdate(latestRelease Release, currentVersion, buildTime string) {
 	releaseTypeWarning := ""
 	if latestRelease.IsAlpha {
@@ -162,6 +181,7 @@ func promptAndUpdate(latestRelease Release, currentVersion, buildTime string) {
 	}
 }
 
+// UpdateBinary downloads and installs a new binary version, creating a backup of the current version
 func UpdateBinary(release Release, currentVersion, buildTime string) {
 	// Detect current platform
 	platform := runtime.GOOS
