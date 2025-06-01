@@ -19,6 +19,11 @@ An interactive CLI calculatur that makes 1999 jealous with a release, update and
   - [Channel Types](#channel-types)
   - [Environment Variables](#environment-variables)
   - [Channel Isolation Logic](#channel-isolation-logic)
+- [Understanding Channel Isolation (Important!)](#understanding-channel-isolation-important)
+  - [Why You Need Environment Variables](#why-you-need-environment-variables)
+  - [Channel Switching Limitations](#channel-switching-limitations)
+  - [Common Channel Scenarios](#common-channel-scenarios)
+  - [Why This Design?](#why-this-design)
 - [Auto-Update Architecture](#auto-update-architecture)
   - [Update Flow Diagram](#update-flow-diagram)
   - [Version Comparison Logic](#version-comparison-logic)
@@ -45,17 +50,14 @@ git clone https://github.com/jondkelley/cicd_golang_calculator.git
 cd cicd_golang_calculator
 
 # Build and run alpha version
-export VERSION=v0.0.1-alpha
 make build
 CALC_ALLOW_ALPHA=1 ./calc
 
-# Build and run alpha version
-export VERSION=v0.0.1-beta
+# Build and run beta version
 make build
 CALC_ALLOW_BETA=1 ./calc
 
 # Build and run stable
-export VERSION=v0.0.1
 make build
 ./calc
 
@@ -172,23 +174,23 @@ echo "Running pre-commit checks..."
 
 # Format check
 if ! make fmt; then
-    echo "❌ Code formatting failed"
+    echo "XXX Code formatting failed"
     exit 1
 fi
 
 # Vet check
 if ! make vet; then
-    echo "❌ Go vet failed"
+    echo "XXX Go vet failed"
     exit 1
 fi
 
 # Run tests
 if ! make test; then
-    echo "❌ Tests failed"
+    echo "XXX Tests failed"
     exit 1
 fi
 
-echo "✅ All pre-commit checks passed"
+echo "[OK] All pre-commit checks passed"
 EOF
 
 # Make executable
@@ -252,13 +254,98 @@ graph TD
     N --> Q[Update to Latest Alpha]
 ```
 
-**Channel Isolation Rules:**
-- Stable users never get pre-release updates (even with flags enabled)
-- Beta users only get beta updates when `CALC_ALLOW_BETA=1`
-- Alpha users only get alpha updates when `CALC_ALLOW_ALPHA=1`
-- Users cannot cross channels without explicit version installation
+## Understanding Channel Isolation (Important!)
 
-This design prevents accidental downgrades and maintains predictable update behavior.
+**🚨 CRITICAL CONCEPT**: The calculator uses strict channel isolation to prevent unexpected upgrades and downgrades. This means **you cannot switch between channels through updates** - you can only update within your current channel.
+
+### Why You Need Environment Variables
+
+The environment variables (`CALC_ALLOW_ALPHA` and `CALC_ALLOW_BETA`) are **required** for pre-release users to receive updates. This is a safety feature to prevent accidental upgrades to unstable versions.
+
+#### Scenario Examples:
+
+**✅ Alpha User Getting Alpha Updates:**
+```bash
+# Current version: v0.0.1-alpha
+# Available: v0.0.2-alpha
+CALC_ALLOW_ALPHA=1 ./calc
+# Result: "new version v0.0.2-alpha (ALPHA RELEASE) available"
+```
+
+**❌ Alpha User Trying to Get Beta Updates:**
+```bash
+# Current version: v0.0.2-alpha  
+# Available: v0.0.100-beta
+CALC_ALLOW_BETA=1 ./calc
+# Result: "everything is up to date!" (beta updates blocked)
+```
+
+**✅ Beta User Getting Beta Updates:**
+```bash
+# Current version: v0.0.1-beta
+# Available: v0.0.100-beta
+CALC_ALLOW_BETA=1 ./calc
+# Result: "new version v0.0.100-beta (BETA RELEASE) available"
+```
+
+**❌ Beta User Without Environment Variable:**
+```bash
+# Current version: v0.0.1-beta
+# Available: v0.0.100-beta
+./calc  # No CALC_ALLOW_BETA=1
+# Result: "everything is up to date!" (no updates without flag)
+```
+
+### Channel Switching Limitations
+
+**You CANNOT switch channels through the auto-updater.** The system enforces these rules:
+
+| Current Channel | Can Update To | Cannot Update To |
+|----------------|---------------|------------------|
+| **Alpha** (`v1.0.0-alpha`) | ✅ Newer alpha only | ❌ Beta, Stable |
+| **Beta** (`v1.0.0-beta`) | ✅ Newer beta only | ❌ Alpha, Stable |
+| **Stable** (`v1.0.0`) | ✅ Newer stable only | ❌ Alpha, Beta |
+
+### Common Channel Scenarios
+
+**Scenario 1: "I'm on alpha but want to try beta"**
+```bash
+# ❌ This will NOT work:
+CALC_ALLOW_BETA=1 ./calc  # Still shows "up to date"
+
+# ✅ Manual channel switch required:
+wget https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.100-beta/calc-linux-amd64
+chmod +x calc-linux-amd64 && mv calc-linux-amd64 calc
+```
+
+**Scenario 2: "I'm on beta but want the latest stable"**
+```bash
+# ❌ This will NOT work:
+./calc  # Still shows "up to date" (can't cross to stable)
+
+# ✅ Manual installation required:
+wget https://github.com/jondkelley/cicd_golang_calculator/releases/latest/download/calc-linux-amd64
+chmod +x calc-linux-amd64 && mv calc-linux-amd64 calc
+```
+
+**Scenario 3: "I forgot to set the environment variable"**
+```bash
+# Current: v0.0.1-alpha, Available: v0.0.2-alpha
+./calc  # Shows "everything is up to date!" ❌
+
+# Fix: Add the environment variable
+CALC_ALLOW_ALPHA=1 ./calc  # Shows update available ✅
+```
+
+### Why This Design?
+
+This strict channel isolation prevents:
+- **Accidental downgrades** (e.g., stable → beta)
+- **Unexpected instability** (e.g., auto-upgrade from stable to alpha)
+- **Version confusion** (mixing different pre-release types)
+- **Dependency conflicts** (different channels may have different requirements)
+
+**Bottom Line**: If you want to switch channels, you must manually download and install a release from your desired channel. The auto-updater only works within your current channel for safety.
 
 ## Auto-Update Architecture
 
@@ -504,7 +591,6 @@ make build
 go version  # Requires Go 1.21+
 ```
 
-
 ## Contributing
 
 Follow these guidelines:
@@ -522,4 +608,3 @@ cd cicd_golang_calculator
 make deps
 make ci  # Verify everything works
 ```
-
