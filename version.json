@@ -1,102 +1,6 @@
 {
   "releases": [
     {
-      "version": "v0.0.2",
-      "urls": {
-        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.2/calc-linux-amd64",
-        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.2/calc-windows-amd64.exe",
-        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.2/calc-darwin-amd64",
-        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.2/calc-darwin-arm64"
-      },
-      "isAlpha": false,
-      "isBeta": false,
-      "releaseDate": "2025-06-01T04:37:15Z"
-    },
-    {
-      "version": "v0.0.1",
-      "urls": {
-        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1/calc-linux-amd64",
-        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1/calc-windows-amd64.exe",
-        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1/calc-darwin-amd64",
-        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1/calc-darwin-arm64"
-      },
-      "isAlpha": false,
-      "isBeta": false,
-      "releaseDate": "2025-06-01T03:53:44Z"
-    },
-    {
-      "version": "v10.1.110-beta",
-      "urls": {
-        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v10.1.110-beta/calc-linux-amd64",
-        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v10.1.110-beta/calc-windows-amd64.exe",
-        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v10.1.110-beta/calc-darwin-amd64",
-        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v10.1.110-beta/calc-darwin-arm64"
-      },
-      "isAlpha": false,
-      "isBeta": true,
-      "releaseDate": "2025-06-01T03:25:09Z"
-    },
-    {
-      "version": "v1.1.110-beta",
-      "urls": {
-        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v1.1.110-beta/calc-linux-amd64",
-        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v1.1.110-beta/calc-windows-amd64.exe",
-        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v1.1.110-beta/calc-darwin-amd64",
-        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v1.1.110-beta/calc-darwin-arm64"
-      },
-      "isAlpha": false,
-      "isBeta": true,
-      "releaseDate": "2025-06-01T03:25:09Z"
-    },
-    {
-      "version": "v0.1.110-beta",
-      "urls": {
-        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.1.110-beta/calc-linux-amd64",
-        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.1.110-beta/calc-windows-amd64.exe",
-        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.1.110-beta/calc-darwin-amd64",
-        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.1.110-beta/calc-darwin-arm64"
-      },
-      "isAlpha": false,
-      "isBeta": true,
-      "releaseDate": "2025-06-01T03:25:09Z"
-    },
-    {
-      "version": "v0.0.110-beta",
-      "urls": {
-        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.110-beta/calc-linux-amd64",
-        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.110-beta/calc-windows-amd64.exe",
-        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.110-beta/calc-darwin-amd64",
-        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.110-beta/calc-darwin-arm64"
-      },
-      "isAlpha": false,
-      "isBeta": true,
-      "releaseDate": "2025-06-01T03:25:09Z"
-    },
-    {
-      "version": "v0.0.100-beta",
-      "urls": {
-        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.100-beta/calc-linux-amd64",
-        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.100-beta/calc-windows-amd64.exe",
-        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.100-beta/calc-darwin-amd64",
-        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.100-beta/calc-darwin-arm64"
-      },
-      "isAlpha": false,
-      "isBeta": true,
-      "releaseDate": "2025-06-01T03:25:09Z"
-    },
-    {
-      "version": "v0.0.10-beta",
-      "urls": {
-        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.10-beta/calc-linux-amd64",
-        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.10-beta/calc-windows-amd64.exe",
-        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.10-beta/calc-darwin-amd64",
-        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.10-beta/calc-darwin-arm64"
-      },
-      "isAlpha": false,
-      "isBeta": true,
-      "releaseDate": "2025-06-01T03:25:09Z"
-    },
-    {
       "version": "v0.0.1-beta",
       "urls": {
         "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1-beta/calc-linux-amd64",
@@ -106,7 +10,7 @@
       },
       "isAlpha": false,
       "isBeta": true,
-      "releaseDate": "2025-06-01T03:25:09Z"
+      "releaseDate": "2025-06-01T04:56:48Z"
     },
     {
       "version": "v0.0.2-alpha",
@@ -118,7 +22,7 @@
       },
       "isAlpha": true,
       "isBeta": false,
-      "releaseDate": "2025-06-01T03:25:09Z"
+      "releaseDate": "2025-06-01T04:56:48Z"
     },
     {
       "version": "v0.0.1-alpha",
@@ -130,7 +34,7 @@
       },
       "isAlpha": true,
       "isBeta": false,
-      "releaseDate": "2025-06-01T03:25:09Z"
+      "releaseDate": "2025-06-01T04:56:48Z"
     }
   ]
 }
