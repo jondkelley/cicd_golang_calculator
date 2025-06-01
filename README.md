@@ -44,7 +44,18 @@ Get the calculator running in under 60 seconds:
 git clone https://github.com/jondkelley/cicd_golang_calculator.git
 cd cicd_golang_calculator
 
-# Build and run
+# Build and run alpha version
+export VERSION=v0.0.1-alpha
+make build
+CALC_ALLOW_ALPHA=1 ./calc
+
+# Build and run alpha version
+export VERSION=v0.0.1-beta
+make build
+CALC_ALLOW_BETA=1 ./calc
+
+# Build and run stable
+export VERSION=v0.0.1
 make build
 ./calc
 
