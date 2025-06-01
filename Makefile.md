@@ -24,14 +24,14 @@ make test
 
 ### Platform-Specific Builds
 - `make build-linux` - Build for Linux (amd64)
-- `make build-windows` - Build for Windows (amd64) 
+- `make build-windows` - Build for Windows (amd64)
 - `make build-darwin` - Build for macOS Intel (amd64)
 - `make build-darwin-arm64` - Build for macOS Apple Silicon (arm64)
 
 ### Output Files
 When you run `make build-all`, you'll get these binaries:
 - `calc-linux` - Linux executable
-- `calc-windows.exe` - Windows executable  
+- `calc-windows.exe` - Windows executable
 - `calc-macos` - macOS Intel executable
 - `calc-macos-arm64` - macOS Apple Silicon executable
 
@@ -67,7 +67,7 @@ When you run `make build-all`, you'll get these binaries:
 # Create a stable release tag
 make tag-stable TAG=v1.0.1
 
-# Create an alpha release tag  
+# Create an alpha release tag
 make tag-alpha TAG=v1.0.2-alpha
 
 # Create any tag (auto-detects stable vs alpha)
@@ -193,7 +193,7 @@ The Makefile's tagging commands make this process easy:
 # For stable releases
 make tag-stable TAG=v1.0.1
 
-# For alpha releases  
+# For alpha releases
 make tag-alpha TAG=v1.0.2-alpha
 ```
 
