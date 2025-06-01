@@ -14,22 +14,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # This is good - fetches full history
 
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
           go-version: 1.21
 
-      - name: Run CI pipeline with Makefile
+      # Add this step to explicitly set the version
+      - name: Set version from tag
         run: |
-          # This runs: clean, deps, fmt, vet, lint, test, build-all
-          make ci
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "Building version: $VERSION"
+
+      # Modify the CI pipeline to use the explicit version
+      - name: Run CI pipeline with explicit version
+        run: |
+          # Override the VERSION variable in Makefile
+          make ci VERSION=${{ env.VERSION }}
 
       - name: List built binaries
         run: |
           echo "Built binaries:"
           ls -la calc-*
+
+      # Add step to verify version in built binaries
+      - name: Verify version in binaries
+        run: |
+          echo "Checking version in Linux binary:"
+          chmod 755 calc-linux-amd64
+          ./calc-linux-amd64 --version || echo "::warning No version flag supported"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -227,7 +242,7 @@ jobs:
               echo "❌ Push failed on attempt $ATTEMPT"
 
               if [ $ATTEMPT -eq $MAX_ATTEMPTS ]; then
-                echo "🚨 All $MAX_ATTEMPTS attempts failed. Manual intervention required."
+                echo "🚨 All $MAX_ATTEMPTS attempts failed. Manual intervention requires."
                 exit 1
               fi
 

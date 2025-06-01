@@ -5,7 +5,14 @@
 APP_NAME := calc
 MODULE := github.com/jondkelley/cicd_golang_calculator
 CMD_DIR := ./cmd/calculator
-VERSION := $(shell git describe --tags --always --dirty)
+
+# Version handling - prefer environment variable, fallback to git describe
+ifdef VERSION
+	VERSION := $(VERSION)
+else
+	VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev-unknown")
+endif
+
 BUILD_TIME := $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 LDFLAGS := -ldflags "-X main.version=$(VERSION) -X main.buildTime=$(BUILD_TIME)"
 
@@ -78,38 +85,40 @@ bench:
 # Build for current platform
 build: deps fmt
 	@echo "Building calculator for current platform..."
+	@echo "Using version: $(VERSION)"
 	go build $(LDFLAGS) -o $(APP_NAME) $(CMD_DIR)
 	@echo "Built: ./$(APP_NAME)"
 
 # Build for all platforms
 build-all: deps fmt $(BINARIES)
+	@echo "All binaries built with version: $(VERSION)"
 
 # Build for Linux
 build-linux: deps fmt
-	@echo "Building for Linux..."
-	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(APP_NAME)-linux $(CMD_DIR)
+	@echo "Building for Linux with version: $(VERSION)"
+	GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o $(APP_NAME)-linux-amd64 $(CMD_DIR)
 
-# Build for Windows
+# Build for Windows  
 build-windows: deps fmt
-	@echo "Building for Windows..."
-	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(APP_NAME)-windows.exe $(CMD_DIR)
+	@echo "Building for Windows with version: $(VERSION)"
+	GOOS=windows GOARCH=amd64 go build $(LDFLAGS) -o $(APP_NAME)-windows-amd64.exe $(CMD_DIR)
 
 # Build for macOS Intel
 build-darwin: deps fmt
-	@echo "Building for macOS (Intel)..."
-	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(APP_NAME)-macos $(CMD_DIR)
+	@echo "Building for macOS (Intel) with version: $(VERSION)"
+	GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o $(APP_NAME)-darwin-amd64 $(CMD_DIR)
 
 # Build for macOS Apple Silicon
 build-darwin-arm64: deps fmt
-	@echo "Building for macOS (Apple Silicon)..."
-	GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(APP_NAME)-macos-arm64 $(CMD_DIR)
+	@echo "Building for macOS (Apple Silicon) with version: $(VERSION)"
+	GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o $(APP_NAME)-darwin-arm64 $(CMD_DIR)
 
 # Generic build rule for all platforms
 $(APP_NAME)-%: deps fmt
 	$(eval GOOS := $(word 1,$(subst -, ,$*)))
 	$(eval GOARCH := $(word 2,$(subst -, ,$*)))
 	$(eval EXT := $(if $(filter windows,$(GOOS)),.exe,))
-	@echo "Building for $(GOOS)/$(GOARCH)..."
+	@echo "Building for $(GOOS)/$(GOARCH) with version: $(VERSION)"
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build $(LDFLAGS) -o $@$(EXT) $(CMD_DIR)
 
 # Development run
@@ -124,7 +133,7 @@ run-args: build
 
 # Release build (optimized)
 release: deps fmt vet test
-	@echo "Building release version..."
+	@echo "Building release version with version: $(VERSION)"
 	go build $(LDFLAGS) -a -installsuffix cgo -o $(APP_NAME) $(CMD_DIR)
 
 tag:
@@ -200,3 +209,6 @@ help:
 	@echo "  ci            - Simulate CI pipeline"
 	@echo "  install       - Install binary to GOPATH/bin"
 	@echo "  help          - Show this help message"
+	@echo ""
+	@echo "Environment variables:"
+	@echo "  VERSION       - Override version (useful in CI): make build VERSION=v1.2.3"
