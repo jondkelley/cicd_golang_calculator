@@ -4,6 +4,14 @@
 
 An interactive CLI calculatur that makes 1999 jealous with a release, update and distribution model from the modern century with enterprise-grade CI/CD pipelines and sophisticated auto-update system. This is a demonstration of production-ready software engineering practices including semantic versioning, channel-based release management, testing, and automated deployment workflows.
 
+Prompted automatic updates behavior
+
+![screenshot prompted](img/screenshot-prompt.png)
+
+Seamless automatic updates behavior
+
+![screenshot automatic](img/screenshot-automatic.png)
+
 ## Table of Contents
 
 - [Quick Start](#quick-start)
@@ -50,14 +58,17 @@ git clone https://github.com/jondkelley/cicd_golang_calculator.git
 cd cicd_golang_calculator
 
 # Build and run alpha version
+export VERSION=0.0.1-alpha
 make build
-CALC_ALLOW_ALPHA=1 ./calc
+./calc
 
 # Build and run beta version
+export VERSION=0.0.1-beta
 make build
-CALC_ALLOW_BETA=1 ./calc
+/calc
 
 # Build and run stable
+export VERSION=0.0.1
 make build
 ./calc
 
@@ -213,7 +224,7 @@ The calculator implements a sophisticated three-tier release channel system prov
 
 ### Environment Variables
 
-Control your update channel using environment variables:
+Control your update channel and behavior using environment variables:
 
 ```bash
 # Stay on stable channel (default behavior)
@@ -224,7 +235,18 @@ CALC_ALLOW_ALPHA=1 ./calc
 
 # Enable beta releases  
 CALC_ALLOW_BETA=1 ./calc
+
+# Enable automatic updates without prompts
+CALC_UNPROMPTED_ENABLE=1 ./calc
+
+# Combine flags for automatic (seamless) alpha updates, this also works with any other version (beta, stable) as well.
+CALC_ALLOW_ALPHA=1 CALC_UNPROMPTED_ENABLE=1 ./calc
 ```
+
+**Update Behavior Controls:**
+- `CALC_ALLOW_ALPHA=1`: Enables updates to alpha releases for alpha users
+- `CALC_ALLOW_BETA=1`: Enables updates to beta releases for beta users  
+- `CALC_UNPROMPTED_ENABLE=1`: Automatically installs available updates without user confirmation
 
 ### Channel Isolation Logic
 
@@ -438,17 +460,17 @@ Create releases using git tags with semantic versioning:
 # Stable release
 git tag v1.2.3
 git push origin v1.2.3
-(or just make tag v1.2.3)
+(or just make tag TAG=v1.2.3)
 
 # Beta release
 git tag v1.3.0-beta
 git push origin v1.3.0-beta
-(or just make tag v1.3.0-beta)
+(or just make tag TAG=v1.3.0-beta)
 
 # Alpha release  
 git tag v1.4.0-alpha
 git push origin v1.4.0-alpha
-(or just make tag v1.4.0-alpha)
+(or just make tag TAG=v1.4.0-alpha)
 ```
 
 The CI pipeline automatically:

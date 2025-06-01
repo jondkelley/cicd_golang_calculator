@@ -1,4 +1,3 @@
-// Add this to internal/updater/manifest_test.go
 package updater
 
 import (
