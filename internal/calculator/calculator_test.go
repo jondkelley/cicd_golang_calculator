@@ -118,7 +118,7 @@ func TestModFloat(t *testing.T) {
 // Tests: 2^3 = 8 and 2^(-2) = 0.25
 func TestPower(t *testing.T) {
 	calc := New()
-	
+
 	// Test positive exponent
 	result := calc.Power(2, 3)
 	if result != 8 {
@@ -136,7 +136,7 @@ func TestPower(t *testing.T) {
 // Tests both successful sqrt(16) = 4 and error case (sqrt of negative number)
 func TestSqrt(t *testing.T) {
 	calc := New()
-	
+
 	// Test normal square root case
 	result, err := calc.Sqrt(16)
 	if err != nil || result != 4 {
