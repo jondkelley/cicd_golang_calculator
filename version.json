@@ -1,6 +1,42 @@
 {
   "releases": [
     {
+      "version": "v0.0.10-beta",
+      "urls": {
+        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.10-beta/calc-linux-amd64",
+        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.10-beta/calc-windows-amd64.exe",
+        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.10-beta/calc-darwin-amd64",
+        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.10-beta/calc-darwin-arm64"
+      },
+      "isAlpha": false,
+      "isBeta": true,
+      "releaseDate": "2025-06-01T03:06:35Z"
+    },
+    {
+      "version": "v0.0.2-beta",
+      "urls": {
+        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.2-beta/calc-linux-amd64",
+        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.2-beta/calc-windows-amd64.exe",
+        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.2-beta/calc-darwin-amd64",
+        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.2-beta/calc-darwin-arm64"
+      },
+      "isAlpha": false,
+      "isBeta": true,
+      "releaseDate": "2025-06-01T03:06:35Z"
+    },
+    {
+      "version": "v0.0.1-beta",
+      "urls": {
+        "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1-beta/calc-linux-amd64",
+        "windows": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1-beta/calc-windows-amd64.exe",
+        "darwin": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1-beta/calc-darwin-amd64",
+        "darwin-arm64": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.1-beta/calc-darwin-arm64"
+      },
+      "isAlpha": false,
+      "isBeta": true,
+      "releaseDate": "2025-06-01T03:06:35Z"
+    },
+    {
       "version": "v0.0.10-alpha",
       "urls": {
         "linux": "https://github.com/jondkelley/cicd_golang_calculator/releases/download/v0.0.10-alpha/calc-linux-amd64",
