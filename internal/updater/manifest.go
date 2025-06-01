@@ -138,11 +138,19 @@ func (sv *SemanticVersion) IsNewerThan(other *SemanticVersion) bool {
 	return false
 }
 
+// isEnvVarTrue checks if an environment variable should be considered true
+// Empty string, "0", "false", "False", "FALSE" are considered false
+// Any other non-empty value is considered true
+func isEnvVarTrue(envVar string) bool {
+	value := strings.ToLower(strings.TrimSpace(os.Getenv(envVar)))
+	return value != "" && value != "0" && value != "false"
+}
+
 // FindLatestEligibleRelease returns the latest release that the user is allowed to install
 // and is newer than the current version, respecting channel preferences
 func FindLatestEligibleRelease(releases []Release, currentVersion string) *Release {
-	allowAlpha := os.Getenv("CALC_ALLOW_ALPHA") != ""
-	allowBeta := os.Getenv("CALC_ALLOW_BETA") != ""
+	allowAlpha := isEnvVarTrue("CALC_ALLOW_ALPHA")
+	allowBeta := isEnvVarTrue("CALC_ALLOW_BETA")
 
 	currentSemVer, err := ParseSemanticVersion(currentVersion)
 	if err != nil {
@@ -150,7 +158,7 @@ func FindLatestEligibleRelease(releases []Release, currentVersion string) *Relea
 		return nil
 	}
 
-	// Determine current channel preference
+	// Determine current channel
 	currentChannel := "stable"
 	if currentSemVer.IsAlpha {
 		currentChannel = "alpha"
@@ -162,16 +170,7 @@ func FindLatestEligibleRelease(releases []Release, currentVersion string) *Relea
 	var latestSemVer *SemanticVersion
 
 	for _, release := range releases {
-		// Skip alpha releases unless allowed
-		if release.IsAlpha && !allowAlpha {
-			continue
-		}
-
-		// Skip beta releases unless allowed
-		if release.IsBeta && !allowBeta {
-			continue
-		}
-
+		// Parse release version first
 		releaseSemVer, err := ParseSemanticVersion(release.Version)
 		if err != nil {
 			fmt.Printf("Warning: Could not parse release version %s: %v\n", release.Version, err)
@@ -183,10 +182,7 @@ func FindLatestEligibleRelease(releases []Release, currentVersion string) *Relea
 			continue
 		}
 
-		// Channel preference logic:
-		// - If user is on alpha, prefer alpha updates (but allow beta/stable if no newer alpha exists)
-		// - If user is on beta, prefer beta updates (but allow stable if no newer beta exists)
-		// - If user is on stable, only offer stable updates
+		// Determine release channel
 		releaseChannel := "stable"
 		if release.IsAlpha {
 			releaseChannel = "alpha"
@@ -194,38 +190,37 @@ func FindLatestEligibleRelease(releases []Release, currentVersion string) *Relea
 			releaseChannel = "beta"
 		}
 
-		// Channel priority scoring (lower is better)
-		currentChannelPriority := getChannelPriority(currentChannel, releaseChannel)
+		// Apply channel isolation rules
+		isEligible := false
+		switch currentChannel {
+		case "alpha":
+			// Alpha users can only get alpha updates if CALC_ALLOW_ALPHA is set
+			if releaseChannel == "alpha" && allowAlpha {
+				isEligible = true
+			}
+		case "beta":
+			// Beta users can only get beta updates if CALC_ALLOW_BETA is set
+			if releaseChannel == "beta" && allowBeta {
+				isEligible = true
+			}
+		case "stable":
+			// Stable users can only get stable updates (no flags needed)
+			if releaseChannel == "stable" {
+				isEligible = true
+			}
+		}
 
-		// If this is the first eligible release
-		if latestEligible == nil {
-			latestEligible = &release
-			latestSemVer = releaseSemVer
+		if !isEligible {
 			continue
 		}
 
-		// Compare with current latest
-		latestChannel := "stable"
-		if latestEligible.IsAlpha {
-			latestChannel = "alpha"
-		} else if latestEligible.IsBeta {
-			latestChannel = "beta"
-		}
-		latestChannelPriority := getChannelPriority(currentChannel, latestChannel)
-
-		// Prefer releases in the same channel as current, then by version
-		if currentChannelPriority < latestChannelPriority {
-			// This release is in a more preferred channel
-			latestEligible = &release
+		// If this is the first eligible release, or if it's newer than our current best
+		if latestEligible == nil || releaseSemVer.IsNewerThan(latestSemVer) {
+			// Create a copy to avoid pointer issues with loop variable
+			releaseCopy := release
+			latestEligible = &releaseCopy
 			latestSemVer = releaseSemVer
-		} else if currentChannelPriority == latestChannelPriority {
-			// Same channel preference, choose newer version
-			if releaseSemVer.IsNewerThan(latestSemVer) {
-				latestEligible = &release
-				latestSemVer = releaseSemVer
-			}
 		}
-		// If currentChannelPriority > latestChannelPriority, keep the current latest
 	}
 
 	return latestEligible
