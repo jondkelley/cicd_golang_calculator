@@ -8,7 +8,16 @@ import (
 	"runtime"
 )
 
-// CheckForUpdate checks for available updates and prompts the user to update if a new version is found
+// UpdateCheckResult represents the result of checking for updates
+type UpdateCheckResult struct {
+	HasUpdate      bool
+	LatestRelease  *Release
+	IsGated        bool   // Update exists but requires env var
+	RequiredEnvVar string // Which env var is needed
+	CurrentChannel string
+}
+
+// CheckForUpdate checks for available updates and provides clear messaging
 func CheckForUpdate(currentVersion, buildTime string) {
 	fmt.Print("Checking for updates... ")
 
@@ -24,21 +33,115 @@ func CheckForUpdate(currentVersion, buildTime string) {
 		return
 	}
 
-	latestRelease := FindLatestEligibleRelease(manifest.Releases, currentVersion)
-	if latestRelease == nil {
+	result := CheckForUpdatesWithResult(manifest.Releases, currentVersion)
+
+	if !result.HasUpdate {
 		fmt.Println("everything is up to date!")
 		return
 	}
 
-	if latestRelease.Version == currentVersion {
-		fmt.Println("you are running latest version.")
+	if result.IsGated {
+		// There IS an update, but it's gated behind an environment variable
+		releaseType := ""
+		if result.LatestRelease.IsAlpha {
+			releaseType = "ALPHA RELEASE"
+		} else if result.LatestRelease.IsBeta {
+			releaseType = "BETA RELEASE"
+		}
+
+		fmt.Printf("new version %s (%s) available!\n", result.LatestRelease.Version, releaseType)
+		fmt.Printf("To get %s updates, run: %s=1 ./calc\n",
+			result.CurrentChannel, result.RequiredEnvVar)
 		return
 	}
 
-	promptAndUpdate(*latestRelease, currentVersion, buildTime)
+	promptAndUpdate(*result.LatestRelease, currentVersion, buildTime)
 }
 
-// promptAndUpdate shows the update prompt and handles the update process
+// CheckForUpdatesWithResult returns detailed information about update availability
+func CheckForUpdatesWithResult(releases []Release, currentVersion string) UpdateCheckResult {
+	result := UpdateCheckResult{
+		HasUpdate: false,
+		IsGated:   false,
+	}
+
+	// Parse current version to determine channel
+	currentSemVer, err := ParseSemanticVersion(currentVersion)
+	if err != nil {
+		return result
+	}
+
+	// Determine current channel
+	currentChannel := "stable"
+	requiredEnvVar := ""
+	if currentSemVer.IsAlpha {
+		currentChannel = "alpha"
+		requiredEnvVar = "CALC_ALLOW_ALPHA"
+	} else if currentSemVer.IsBeta {
+		currentChannel = "beta"
+		requiredEnvVar = "CALC_ALLOW_BETA"
+	}
+
+	result.CurrentChannel = currentChannel
+	result.RequiredEnvVar = requiredEnvVar
+
+	// Check if environment variable is set
+	allowAlpha := isEnvVarTrue("CALC_ALLOW_ALPHA")
+	allowBeta := isEnvVarTrue("CALC_ALLOW_BETA")
+
+	// Find the latest release in the user's current channel
+	var latestInChannel *Release
+	var latestInChannelSemVer *SemanticVersion
+
+	for _, release := range releases {
+		releaseSemVer, err := ParseSemanticVersion(release.Version)
+		if err != nil {
+			continue
+		}
+
+		// Skip if not newer than current
+		if !releaseSemVer.IsNewerThan(currentSemVer) {
+			continue
+		}
+
+		// Check if this release is in the same channel
+		releaseChannel := "stable"
+		if release.IsAlpha {
+			releaseChannel = "alpha"
+		} else if release.IsBeta {
+			releaseChannel = "beta"
+		}
+
+		if releaseChannel == currentChannel {
+			// This is a newer release in the same channel
+			if latestInChannel == nil || releaseSemVer.IsNewerThan(latestInChannelSemVer) {
+				releaseCopy := release
+				latestInChannel = &releaseCopy
+				latestInChannelSemVer = releaseSemVer
+			}
+		}
+	}
+
+	// If we found a newer release in the same channel
+	if latestInChannel != nil {
+		result.HasUpdate = true
+		result.LatestRelease = latestInChannel
+
+		// Check if it's gated by environment variables
+		switch currentChannel {
+		case "alpha":
+			result.IsGated = !allowAlpha
+		case "beta":
+			result.IsGated = !allowBeta
+		case "stable":
+			result.IsGated = false // Stable updates are never gated
+		}
+	}
+
+	return result
+}
+
+// Rest of the functions remain the same...
 func promptAndUpdate(latestRelease Release, currentVersion, buildTime string) {
 	releaseTypeWarning := ""
 	if latestRelease.IsAlpha {
@@ -59,11 +162,9 @@ func promptAndUpdate(latestRelease Release, currentVersion, buildTime string) {
 	}
 }
 
-// UpdateBinary downloads and installs the new binary version
 func UpdateBinary(release Release, currentVersion, buildTime string) {
 	// Detect current platform
 	platform := runtime.GOOS
-
 	url, exists := release.URLs[platform]
 	if !exists {
 		fmt.Printf("No binary available for platform: %s\n", platform)
