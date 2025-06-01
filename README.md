@@ -438,17 +438,17 @@ Create releases using git tags with semantic versioning:
 # Stable release
 git tag v1.2.3
 git push origin v1.2.3
-(or just make tag v1.2.3)
+(or just make tag TAG=v1.2.3)
 
 # Beta release
 git tag v1.3.0-beta
 git push origin v1.3.0-beta
-(or just make tag v1.3.0-beta)
+(or just make tag TAG=v1.3.0-beta)
 
 # Alpha release  
 git tag v1.4.0-alpha
 git push origin v1.4.0-alpha
-(or just make tag v1.4.0-alpha)
+(or just make tag TAG=v1.4.0-alpha)
 ```
 
 The CI pipeline automatically:
