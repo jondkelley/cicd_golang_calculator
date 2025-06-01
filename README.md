@@ -50,14 +50,17 @@ git clone https://github.com/jondkelley/cicd_golang_calculator.git
 cd cicd_golang_calculator
 
 # Build and run alpha version
+export VERSION=0.0.1-alpha
 make build
-CALC_ALLOW_ALPHA=1 ./calc
+./calc
 
 # Build and run beta version
+export VERSION=0.0.1-beta
 make build
-CALC_ALLOW_BETA=1 ./calc
+/calc
 
 # Build and run stable
+export VERSION=0.0.1
 make build
 ./calc
 
