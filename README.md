@@ -4,6 +4,14 @@
 
 An interactive CLI calculatur that makes 1999 jealous with a release, update and distribution model from the modern century with enterprise-grade CI/CD pipelines and sophisticated auto-update system. This is a demonstration of production-ready software engineering practices including semantic versioning, channel-based release management, testing, and automated deployment workflows.
 
+Prompted automatic updates behavior
+
+![screenshot prompted](img/screenshot-prompt.png)
+
+Seamless automatic updates behavior
+
+![screenshot automatic](img/screenshot-automatic.png)
+
 ## Table of Contents
 
 - [Quick Start](#quick-start)
