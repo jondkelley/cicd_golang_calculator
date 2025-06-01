@@ -216,7 +216,7 @@ The calculator implements a sophisticated three-tier release channel system prov
 
 ### Environment Variables
 
-Control your update channel using environment variables:
+Control your update channel and behavior using environment variables:
 
 ```bash
 # Stay on stable channel (default behavior)
@@ -227,7 +227,18 @@ CALC_ALLOW_ALPHA=1 ./calc
 
 # Enable beta releases  
 CALC_ALLOW_BETA=1 ./calc
+
+# Enable automatic updates without prompts
+CALC_UNPROMPTED_ENABLE=1 ./calc
+
+# Combine flags for automatic (seamless) alpha updates, this also works with any other version (beta, stable) as well.
+CALC_ALLOW_ALPHA=1 CALC_UNPROMPTED_ENABLE=1 ./calc
 ```
+
+**Update Behavior Controls:**
+- `CALC_ALLOW_ALPHA=1`: Enables updates to alpha releases for alpha users
+- `CALC_ALLOW_BETA=1`: Enables updates to beta releases for beta users  
+- `CALC_UNPROMPTED_ENABLE=1`: Automatically installs available updates without user confirmation
 
 ### Channel Isolation Logic
 
