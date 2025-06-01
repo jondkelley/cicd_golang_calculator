@@ -3,6 +3,7 @@ package updater
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"strconv"
@@ -17,11 +18,66 @@ func normalizeVersion(version string) string {
 	return strings.TrimPrefix(version, "v")
 }
 
+// isNetworkError checks if an error is network-related
+func isNetworkError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	// Convert error to string for pattern matching
+	errStr := strings.ToLower(err.Error())
+
+	// Check for common network error patterns in error messages
+	networkPatterns := []string{
+		"no such host",
+		"connection refused",
+		"connection reset",
+		"connection timed out",
+		"network is unreachable",
+		"host is unreachable",
+		"no route to host",
+		"temporary failure in name resolution",
+		"dial tcp",
+		"lookup",
+		"timeout",
+		"unreachable",
+		"refused",
+	}
+
+	for _, pattern := range networkPatterns {
+		if strings.Contains(errStr, pattern) {
+			return true
+		}
+	}
+
+	// Check for common network errors using type assertions
+	if netErr, ok := err.(net.Error); ok {
+		return netErr.Timeout() || netErr.Temporary()
+	}
+
+	// Check for DNS resolution errors
+	if _, ok := err.(*net.DNSError); ok {
+		return true
+	}
+
+	// Check for connection refused errors
+	if opErr, ok := err.(*net.OpError); ok {
+		return opErr.Op == "dial" || opErr.Op == "read" || opErr.Op == "write"
+	}
+
+	return false
+}
+
 // FetchVersionManifest retrieves the version manifest from the remote URL
+// Returns nil and prints a warning if there's no internet connection
 func FetchVersionManifest() (*VersionManifest, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Get(manifestURL)
 	if err != nil {
+		if isNetworkError(err) {
+			fmt.Fprintf(os.Stderr, "Warning: No internet connection available. Unable to check for updates right now.\n")
+			return nil, nil // Return nil instead of error to allow graceful continuation
+		}
 		return nil, fmt.Errorf("no version.json manifest found in project repository")
 	}
 	defer resp.Body.Close()
@@ -41,6 +97,23 @@ func FetchVersionManifest() (*VersionManifest, error) {
 	}
 
 	return &manifest, nil
+}
+
+// CheckForUpdates is a convenience function that checks for updates and handles network issues gracefully
+func CheckForUpdates(currentVersion string) (*Release, error) {
+	manifest, err := FetchVersionManifest()
+	if err != nil {
+		return nil, err
+	}
+
+	// If manifest is nil (no internet), return nil gracefully
+	if manifest == nil {
+		return nil, nil
+	}
+
+	// Find the latest eligible release
+	latestRelease := FindLatestEligibleRelease(manifest.Releases, currentVersion)
+	return latestRelease, nil
 }
 
 // SemanticVersion represents a parsed semantic version

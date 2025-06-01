@@ -18,6 +18,12 @@ func CheckForUpdate(currentVersion, buildTime string) {
 		return
 	}
 
+	if manifest == nil {
+		// FetchVersionManifest should have already printed the warning about no internet
+		// Just return gracefully without doing anything else so we don't get panic: runtime error: invalid memory address or nil pointer
+		return
+	}
+
 	latestRelease := FindLatestEligibleRelease(manifest.Releases, currentVersion)
 	if latestRelease == nil {
 		fmt.Println("everything is up to date!")
